@@ -1,0 +1,2 @@
+alter table profiles add column daycare_preference boolean;
+comment on column profiles.daycare_preference is 'Indicates if the person is open to using daycare services for children (true) or prefers other arrangements (false)';

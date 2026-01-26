@@ -1,0 +1,1 @@
+ALTER TABLE profiles ADD COLUMN physical_appearance_importance text;
