@@ -15,7 +15,7 @@ export default function FAQPage() {
             <AccordionTrigger>What is Courtingly?</AccordionTrigger>
             <AccordionContent>
               Courtingly is a Christian courtship platform designed to foster faith-based relationships that honor biblical principles, 
-              traditional values, and intentional matchmaking. In today's society, the path to marriage and family has become increasingly difficult. 
+              traditional values, and intentional matchmaking. In today's society, the path to marriage and family has become difficult. 
               Economic burdens, career pressures, cultural distractions, and secular influences all work against young adults. Courtingly was 
               founded to make it easier for Christians to form marriages earlier, build families, and raise the next generation in faith.
             </AccordionContent>
