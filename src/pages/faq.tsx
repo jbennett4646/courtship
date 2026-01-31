@@ -12,7 +12,7 @@ export default function FAQPage() {
       <Card className="p-6">
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="item-1">
-            <AccordionTrigger>What is Courtingly???</AccordionTrigger>
+            <AccordionTrigger>What is Courtingly?</AccordionTrigger>
             <AccordionContent>
               Courtingly is a Christian courtship platform designed to foster faith-based relationships that honor biblical principles, 
               traditional values, and intentional matchmaking. In today's society, the path to marriage and family has become increasingly difficult. 
