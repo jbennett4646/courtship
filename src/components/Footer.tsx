@@ -26,7 +26,7 @@ const Footer = () => {
             Marriage Ledger
           </Link>
           <span className="text-sm text-muted-foreground">•</span>
-          <span className="text-sm text-muted-foreground">© 2025 Courtingly</span>
+          <span className="text-sm text-muted-foreground">© 2026 Courtingly</span>
         </div>
       </div>
     </footer>
