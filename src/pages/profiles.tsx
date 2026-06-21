@@ -10,6 +10,13 @@ import { getProfiles, type Profile } from "@/lib/supabase";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ProfileFilters,
+  EMPTY_FILTERS,
+  matchesFilters,
+  type ProfileFilterState,
+  type TargetType,
+} from "@/components/ProfileFilters";
 
 type FilterType = "knight" | "lady" | "patriarch" | "my-profile";
 
@@ -21,6 +28,7 @@ export default function Profiles() {
   const [userType, setUserType] = useState<FilterType | null>(null);
   const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<ProfileFilterState>(EMPTY_FILTERS);
 
   useEffect(() => {
     const fetchUserAndProfiles = async () => {
@@ -92,6 +100,14 @@ export default function Profiles() {
     };
   }, [filter]);
 
+  // The profile type currently being browsed (drives which filters apply).
+  const targetType: TargetType | null =
+    filter === 'my-profile' || !filter
+      ? null
+      : userType === 'knight'
+      ? (filter as TargetType)
+      : 'knight';
+
   // Filter profiles based on user type and selected filter
   const filteredProfiles = profiles.filter(profile => {
     if (!userType || !filter || !currentUserId) return false;
@@ -101,19 +117,22 @@ export default function Profiles() {
       return profile.id === currentUserId;
     }
 
-    // Knights can view ladies and patriarchs
+    // Role-based visibility
+    let visible = false;
     if (userType === 'knight') {
-      return profile.type === filter && (filter === 'lady' || filter === 'patriarch');
+      // Knights can view ladies and patriarchs
+      visible = profile.type === filter && (filter === 'lady' || filter === 'patriarch');
+    } else if (userType === 'lady') {
+      // Ladies can only view knights
+      visible = profile.type === 'knight';
+    } else if (userType === 'patriarch') {
+      // Patriarchs can only view knights
+      visible = profile.type === 'knight';
     }
-    // Ladies can only view knights
-    else if (userType === 'lady') {
-      return profile.type === 'knight';
-    }
-    // Patriarchs can only view knights
-    else if (userType === 'patriarch') {
-      return profile.type === 'knight';
-    }
-    return false;
+    if (!visible) return false;
+
+    // Apply the basics filters (age, location, race, height, body type)
+    return matchesFilters(profile, filters);
   });
 
   // Reset current profile index when filtered profiles change
@@ -122,6 +141,12 @@ export default function Profiles() {
       setCurrentProfileIndex(0);
     }
   }, [filteredProfiles.length, currentProfileIndex]);
+
+  // Clear filters when the toggle changes, since some options (e.g. body type)
+  // are specific to the type of profile being viewed.
+  useEffect(() => {
+    setFilters(EMPTY_FILTERS);
+  }, [filter]);
 
   const renderToggleGroup = () => {
     if (!userType) return null;
@@ -212,6 +237,14 @@ export default function Profiles() {
             <div className="flex justify-center mb-8">
               {renderToggleGroup()}
             </div>
+          )}
+
+          {userType && targetType && !loading && !error && (
+            <ProfileFilters
+              targetType={targetType}
+              filters={filters}
+              onChange={setFilters}
+            />
           )}
 
           {loading && (
