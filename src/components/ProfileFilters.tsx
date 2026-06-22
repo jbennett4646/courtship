@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -572,27 +573,17 @@ function CheckboxGroup({
   );
 }
 
-function FilterSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+// Small count pill shown on a category in the left nav.
+function CountBadge({ n }: { n: number }) {
+  if (n <= 0) return null;
   return (
-    <Collapsible className="border-t pt-3">
-      <CollapsibleTrigger asChild>
-        <button className="flex w-full items-center justify-between text-sm font-semibold group">
-          {title}
-          <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="pt-4">
-        <div className="grid gap-5 sm:grid-cols-2">{children}</div>
-      </CollapsibleContent>
-    </Collapsible>
+    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
+      {n}
+    </span>
   );
 }
+
+const BASICS_ID = "__basics__";
 
 export function ProfileFilters({
   targetType,
@@ -601,6 +592,7 @@ export function ProfileFilters({
 }: ProfileFiltersProps) {
   const showPhysical = targetType !== "patriarch";
   const bodyTypes = bodyTypeOptionsFor(targetType);
+  const [activeCat, setActiveCat] = useState<string>(BASICS_ID);
 
   const setSelection = (key: string, value: string) => {
     const current = filters.selections[key] ?? [];
@@ -613,8 +605,39 @@ export function ProfileFilters({
     onChange({ ...filters, selections });
   };
 
+  // Sections that actually have fields for this profile type.
+  const sectionsForType = SECTIONS.map((s) => ({
+    title: s.title,
+    fields: s.fields.filter((f) => f.types.includes(targetType)),
+  })).filter((s) => s.fields.length > 0);
+
+  // Number of active selections within each category (drives the nav badges).
+  const basicsCount =
+    (filters.ageMin !== "" || filters.ageMax !== "" ? 1 : 0) +
+    (filters.location.trim() !== "" ? 1 : 0) +
+    (filters.heightMin !== "" || filters.heightMax !== "" ? 1 : 0) +
+    (filters.selections.race?.length ?? 0) +
+    (filters.selections.body_type?.length ?? 0);
+  const sectionCount = (fields: FieldDef[]) =>
+    fields.reduce((n, f) => n + (filters.selections[f.key]?.length ?? 0), 0);
+
+  const categories = [
+    { id: BASICS_ID, title: "Basics", count: basicsCount },
+    ...sectionsForType.map((s) => ({
+      id: s.title,
+      title: s.title,
+      count: sectionCount(s.fields),
+    })),
+  ];
+
+  // Guard against a stale active category after the profile type changes.
+  const activeId = categories.some((c) => c.id === activeCat)
+    ? activeCat
+    : BASICS_ID;
+  const activeSection = sectionsForType.find((s) => s.title === activeId);
+
   return (
-    <Collapsible className="w-full max-w-3xl mx-auto mb-8 border rounded-lg bg-card">
+    <Collapsible className="w-full max-w-4xl mx-auto mb-8 border rounded-lg bg-card overflow-hidden">
       <div className="flex items-center justify-between p-4">
         <CollapsibleTrigger asChild>
           <button className="flex items-center gap-2 text-sm font-medium group">
@@ -641,126 +664,149 @@ export function ProfileFilters({
         )}
       </div>
 
-      <CollapsibleContent className="px-4 pb-4 max-h-[70vh] overflow-y-auto">
-        {/* Basics */}
-        <div className="grid gap-5 sm:grid-cols-2">
-          {/* Age */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Age</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                min={18}
-                max={100}
-                placeholder="Min"
-                value={filters.ageMin}
-                onChange={(e) => onChange({ ...filters, ageMin: e.target.value })}
-              />
-              <span className="text-muted-foreground">to</span>
-              <Input
-                type="number"
-                min={18}
-                max={100}
-                placeholder="Max"
-                value={filters.ageMax}
-                onChange={(e) => onChange({ ...filters, ageMax: e.target.value })}
-              />
-            </div>
+      <CollapsibleContent className="border-t">
+        <div className="flex flex-col sm:flex-row sm:h-[60vh]">
+          {/* Category nav: vertical on desktop, horizontal scroll on mobile */}
+          <div className="flex shrink-0 gap-1 overflow-x-auto border-b p-2 sm:w-56 sm:flex-col sm:overflow-x-visible sm:overflow-y-auto sm:border-b-0 sm:border-r">
+            {categories.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setActiveCat(c.id)}
+                className={cn(
+                  "flex items-center justify-between gap-2 whitespace-nowrap rounded-md px-3 py-2 text-left text-sm transition-colors",
+                  activeId === c.id
+                    ? "bg-primary/10 font-semibold text-primary"
+                    : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <span>{c.title}</span>
+                <CountBadge n={c.count} />
+              </button>
+            ))}
           </div>
 
-          {/* Location */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Location</Label>
-            <Input
-              type="text"
-              placeholder="e.g. Dallas, TX"
-              value={filters.location}
-              onChange={(e) => onChange({ ...filters, location: e.target.value })}
-            />
-          </div>
+          {/* Options for the selected category */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {activeId === BASICS_ID ? (
+              <div className="grid gap-5 sm:grid-cols-2">
+                {/* Age */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Age</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={18}
+                      max={100}
+                      placeholder="Min"
+                      value={filters.ageMin}
+                      onChange={(e) =>
+                        onChange({ ...filters, ageMin: e.target.value })
+                      }
+                    />
+                    <span className="text-muted-foreground">to</span>
+                    <Input
+                      type="number"
+                      min={18}
+                      max={100}
+                      placeholder="Max"
+                      value={filters.ageMax}
+                      onChange={(e) =>
+                        onChange({ ...filters, ageMax: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
 
-          {/* Height */}
-          {showPhysical && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Height</Label>
-              <div className="flex items-center gap-2">
-                <Select
-                  value={filters.heightMin || ANY}
-                  onValueChange={(v) =>
-                    onChange({ ...filters, heightMin: v === ANY ? "" : v })
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Min" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ANY}>Any</SelectItem>
-                    {HEIGHT_OPTIONS.map((h) => (
-                      <SelectItem key={h} value={h}>
-                        {h}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span className="text-muted-foreground">to</span>
-                <Select
-                  value={filters.heightMax || ANY}
-                  onValueChange={(v) =>
-                    onChange({ ...filters, heightMax: v === ANY ? "" : v })
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Max" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ANY}>Any</SelectItem>
-                    {HEIGHT_OPTIONS.map((h) => (
-                      <SelectItem key={h} value={h}>
-                        {h}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {/* Location */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Location</Label>
+                  <Input
+                    type="text"
+                    placeholder="e.g. Dallas, TX"
+                    value={filters.location}
+                    onChange={(e) =>
+                      onChange({ ...filters, location: e.target.value })
+                    }
+                  />
+                </div>
+
+                {/* Height */}
+                {showPhysical && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Height</Label>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={filters.heightMin || ANY}
+                        onValueChange={(v) =>
+                          onChange({ ...filters, heightMin: v === ANY ? "" : v })
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Min" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={ANY}>Any</SelectItem>
+                          {HEIGHT_OPTIONS.map((h) => (
+                            <SelectItem key={h} value={h}>
+                              {h}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <span className="text-muted-foreground">to</span>
+                      <Select
+                        value={filters.heightMax || ANY}
+                        onValueChange={(v) =>
+                          onChange({ ...filters, heightMax: v === ANY ? "" : v })
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Max" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={ANY}>Any</SelectItem>
+                          {HEIGHT_OPTIONS.map((h) => (
+                            <SelectItem key={h} value={h}>
+                              {h}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Race */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Race</Label>
+                  <CheckboxGroup
+                    options={asOpts(RACE_OPTIONS)}
+                    selected={filters.selections.race ?? []}
+                    onToggle={(v) => setSelection("race", v)}
+                  />
+                </div>
+
+                {/* Body type */}
+                {showPhysical && bodyTypes.length > 0 && (
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label className="text-sm font-medium">Body type</Label>
+                    <CheckboxGroup
+                      options={asOpts(bodyTypes)}
+                      selected={filters.selections.body_type ?? []}
+                      onToggle={(v) => setSelection("body_type", v)}
+                    />
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-
-          {/* Race */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Race</Label>
-            <CheckboxGroup
-              options={asOpts(RACE_OPTIONS)}
-              selected={filters.selections.race ?? []}
-              onToggle={(v) => setSelection("race", v)}
-            />
-          </div>
-
-          {/* Body type */}
-          {showPhysical && bodyTypes.length > 0 && (
-            <div className="space-y-2 sm:col-span-2">
-              <Label className="text-sm font-medium">Body type</Label>
-              <CheckboxGroup
-                options={asOpts(bodyTypes)}
-                selected={filters.selections.body_type ?? []}
-                onToggle={(v) => setSelection("body_type", v)}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Additional sections */}
-        <div className="mt-5 space-y-3">
-          {SECTIONS.map((section) => {
-            const fields = section.fields.filter((f) =>
-              f.types.includes(targetType)
-            );
-            if (fields.length === 0) return null;
-            return (
-              <FilterSection key={section.title} title={section.title}>
-                {fields.map((field) => (
+            ) : activeSection ? (
+              <div className="grid gap-5 sm:grid-cols-2">
+                {activeSection.fields.map((field) => (
                   <div
                     key={field.key}
-                    className={field.isArray ? "space-y-2 sm:col-span-2" : "space-y-2"}
+                    className={
+                      field.isArray ? "space-y-2 sm:col-span-2" : "space-y-2"
+                    }
                   >
                     <Label className="text-sm font-medium">{field.label}</Label>
                     <CheckboxGroup
@@ -770,9 +816,9 @@ export function ProfileFilters({
                     />
                   </div>
                 ))}
-              </FilterSection>
-            );
-          })}
+              </div>
+            ) : null}
+          </div>
         </div>
       </CollapsibleContent>
     </Collapsible>
