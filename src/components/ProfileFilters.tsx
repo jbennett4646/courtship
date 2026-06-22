@@ -509,12 +509,6 @@ const SECTIONS: { title: string; fields: FieldDef[] }[] = [
     fields: [
       { key: "hair_color", label: "Hair color", types: ALL, options: () => asOpts(HAIR_COLORS) },
       { key: "eye_color", label: "Eye color", types: ALL, options: () => asOpts(EYE_COLORS) },
-      {
-        key: "distinctive_features",
-        label: "Distinctive features",
-        types: KL,
-        options: (t) => asOpts(t === "knight" ? KNIGHT_DISTINCTIVE : LADY_DISTINCTIVE),
-      },
     ],
   },
   {
@@ -599,20 +593,6 @@ const SECTIONS: { title: string; fields: FieldDef[] }[] = [
         types: ALL,
         isArray: true,
         options: (t) => asOpts(t === "knight" ? KNIGHT_TRADITIONAL_VALUES : LADY_TRADITIONAL_VALUES),
-      },
-      {
-        key: "skills",
-        label: "Skills",
-        types: ALL,
-        isArray: true,
-        options: (t) => asOpts(t === "knight" ? KNIGHT_SKILLS : LADY_SKILLS),
-      },
-      {
-        key: "interests",
-        label: "Interests",
-        types: ALL,
-        isArray: true,
-        options: (t) => asOpts(t === "knight" ? KNIGHT_INTERESTS : LADY_INTERESTS),
       },
     ],
   },
