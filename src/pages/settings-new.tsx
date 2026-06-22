@@ -253,18 +253,20 @@ export default function SettingsNew() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="age">Age</Label>
-                    <Input
-                      id="age"
-                      value={profile?.age || ''}
-                      onChange={(e) => setProfile({ ...profile, age: e.target.value })}
-                      placeholder="Your age"
-                      type="number"
-                      min="18"
-                      max="99"
-                    />
-                  </div>
+                  {profile?.type !== 'patriarch' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="age">Age</Label>
+                      <Input
+                        id="age"
+                        value={profile?.age || ''}
+                        onChange={(e) => setProfile({ ...profile, age: e.target.value })}
+                        placeholder="Your age"
+                        type="number"
+                        min="18"
+                        max="99"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
